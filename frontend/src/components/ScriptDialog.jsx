@@ -4,7 +4,7 @@ import ScriptForm from './ScriptForm';
 import { PlusIcon } from '@heroicons/react/24/outline';
 import { motion } from 'framer-motion';
 
-function ScriptDialog({ isOpen, onClose, onSubmit, isLoading }) {
+function ScriptDialog({ isOpen, onClose, onSubmit, isLoading, initialScript }) {
   return (
     <Transition appear show={isOpen} as={Fragment}>
       <Dialog as="div" className="relative z-50" onClose={onClose}>
@@ -36,10 +36,10 @@ function ScriptDialog({ isOpen, onClose, onSubmit, isLoading }) {
                   as="h3"
                   className="text-lg font-medium leading-6 text-gray-900 px-6 py-4 border-b border-gray-200 bg-gray-50"
                 >
-                  Create New Script
+                  {initialScript ? 'Edit Script' : 'Add New Script'}
                 </Dialog.Title>
                 <div className="p-6">
-                  <ScriptForm onSubmit={onSubmit} isLoading={isLoading} />
+                  <ScriptForm onSubmit={onSubmit} isLoading={isLoading} initialScript={initialScript} />
                 </div>
               </Dialog.Panel>
             </Transition.Child>

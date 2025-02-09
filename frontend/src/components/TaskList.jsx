@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import TaskDetailDialog from './TaskDetailDialog';
-import { TrashIcon, InformationCircleIcon } from '@heroicons/react/24/outline';
+import { TrashIcon, InformationCircleIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
 
-function TaskList({ tasks, onDelete }) {
+function TaskList({ tasks, onDelete, onRerun }) {
   const [selectedTask, setSelectedTask] = useState(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
 
@@ -78,6 +78,13 @@ function TaskList({ tasks, onDelete }) {
                       >
                         <TrashIcon className="h-4 w-4 mr-1.5" />
                         Delete
+                      </button>
+                      <button
+                        onClick={() => onRerun(task.id)}
+                        className="inline-flex items-center px-3 py-1.5 border border-transparent rounded-lg text-sm font-medium text-green-600 hover:bg-green-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                      >
+                        <ArrowPathIcon className="h-4 w-4 mr-1.5" />
+                        Rerun
                       </button>
                     </div>
                   </div>

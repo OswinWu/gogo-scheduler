@@ -5,8 +5,12 @@ import (
 	"fmt"
 	"gogo-scheduler/internal/model"
 	"gogo-scheduler/internal/repository"
+	"log"
 	"os/exec"
+	"runtime"
 	"time"
+
+	"github.com/panjf2000/ants/v2"
 )
 
 type ScriptService struct {
@@ -28,14 +32,14 @@ func (s *ScriptService) CreateScript(name, scriptType, content string) (*model.S
 	return script, err
 }
 
-func (s *ScriptService) RunScript(scriptID uint) (string, error) {
+func (s *ScriptService) RunScriptAsync(scriptID uint) (uint, error) {
 	script, err := s.repo.GetByID(scriptID)
 	if err != nil {
-		return "", err
+		return 0, err
 	}
 
-	// Generate task name: script_id + script_name + run_date
-	taskName := fmt.Sprintf("%d_%s_%s", scriptID, script.Name, time.Now().Format("20060102_150405"))
+	// taskName format: scriptType_scriptID_scriptName_timestamp
+	taskName := fmt.Sprintf("%s_%d_%s_%s", script.Type, scriptID, script.Name, time.Now().Format("20060102_150405"))
 
 	// Create task record
 	task := &model.Task{
@@ -46,6 +50,27 @@ func (s *ScriptService) RunScript(scriptID uint) (string, error) {
 		LastRun:    time.Now(),
 	}
 	if err := s.taskRepo.Create(task); err != nil {
+		return 0, err
+	}
+
+	err = ants.Submit(func() {
+		_, err := s.RunScript(scriptID, task.ID)
+		if err != nil {
+			log.Println("error running script:", err)
+		}
+	})
+	return task.ID, err
+
+}
+
+func (s *ScriptService) RunScript(scriptID, taskID uint) (string, error) {
+	script, err := s.repo.GetByID(scriptID)
+	if err != nil {
+		return "", err
+	}
+
+	task, err := s.taskRepo.GetByID(taskID)
+	if err != nil {
 		return "", err
 	}
 
@@ -54,9 +79,16 @@ func (s *ScriptService) RunScript(scriptID uint) (string, error) {
 
 	switch script.Type {
 	case "python":
-		cmd = exec.Command("python3", "-c", script.Content)
+		// if windows, use pythonw
+		if runtime.GOOS == "windows" {
+			cmd = exec.Command("python", "-c", script.Content)
+		} else {
+			cmd = exec.Command("python3", "-c", script.Content)
+		}
+
 	case "shell":
 		cmd = exec.Command("bash", "-c", script.Content)
+
 	default:
 		return "", fmt.Errorf("unsupported script type: %s", script.Type)
 	}
@@ -102,4 +134,27 @@ func (s *ScriptService) GetTask(id uint) (*model.Task, error) {
 
 func (s *ScriptService) DeleteTask(id uint) error {
 	return s.taskRepo.Delete(id)
+}
+
+func (s *ScriptService) UpdateScript(id uint, name, scriptType, content string) (*model.Script, error) {
+	script, err := s.repo.GetByID(id)
+	if err != nil {
+		return nil, err
+	}
+
+	script.Name = name
+	script.Type = scriptType
+	script.Content = content
+
+	err = s.repo.Update(script)
+	return script, err
+}
+
+func (s *ScriptService) RerunTask(taskID uint) (uint, error) {
+	task, err := s.taskRepo.GetByID(taskID)
+	if err != nil {
+		return 0, err
+	}
+
+	return s.RunScriptAsync(task.ScriptID)
 }

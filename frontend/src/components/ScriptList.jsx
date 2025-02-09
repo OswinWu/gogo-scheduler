@@ -1,6 +1,7 @@
 import { motion, AnimatePresence } from 'framer-motion';
+import { PencilIcon, TrashIcon, PlayIcon } from '@heroicons/react/24/outline';
 
-function ScriptList({ scripts, onDelete, onRun }) {
+function ScriptList({ scripts, onDelete, onRun, onEdit }) {
   return (
     <div className="mt-8 space-y-4">
       <AnimatePresence>
@@ -24,13 +25,19 @@ function ScriptList({ scripts, onDelete, onRun }) {
                   <motion.button
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
-                    onClick={() => onRun(script.id)}
-                    className="inline-flex items-center px-3 py-1.5 border border-transparent rounded-lg text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                    onClick={() => onEdit(script)}
+                    className="inline-flex items-center px-3 py-1.5 border border-transparent rounded-lg text-sm font-medium text-blue-600 hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                   >
-                    <svg className="h-4 w-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
+                    <PencilIcon className="h-4 w-4 mr-1.5" />
+                    Edit
+                  </motion.button>
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => onRun(script.id)}
+                    className="inline-flex items-center px-3 py-1.5 border border-transparent rounded-lg text-sm font-medium text-green-600 hover:bg-green-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                  >
+                    <PlayIcon className="h-4 w-4 mr-1.5" />
                     Run Now
                   </motion.button>
                   <motion.button
@@ -39,9 +46,7 @@ function ScriptList({ scripts, onDelete, onRun }) {
                     onClick={() => onDelete(script.id)}
                     className="inline-flex items-center px-3 py-1.5 border border-transparent rounded-lg text-sm font-medium text-red-600 hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
                   >
-                    <svg className="h-4 w-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
+                    <TrashIcon className="h-4 w-4 mr-1.5" />
                     Delete
                   </motion.button>
                 </div>

@@ -44,7 +44,7 @@ func (h *ScriptHandler) RunScript(c *gin.Context) {
 		return
 	}
 
-	output, err := h.service.RunScript(uint(id))
+	output, err := h.service.RunScriptAsync(uint(id))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error":  err.Error(),
@@ -117,4 +117,31 @@ func (h *ScriptHandler) DeleteTask(c *gin.Context) {
 	}
 
 	c.Status(http.StatusNoContent)
+}
+
+func (h *ScriptHandler) UpdateScript(c *gin.Context) {
+	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
+		return
+	}
+
+	var script struct {
+		Name    string `json:"name" binding:"required"`
+		Type    string `json:"type" binding:"required"`
+		Content string `json:"content" binding:"required"`
+	}
+
+	if err := c.ShouldBindJSON(&script); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	result, err := h.service.UpdateScript(uint(id), script.Name, script.Type, script.Content)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, result)
 }

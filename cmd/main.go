@@ -51,11 +51,13 @@ func main() {
 	r.POST("/scripts", scriptHandler.CreateScript)
 	r.GET("/scripts", scriptHandler.ListScripts)
 	r.GET("/scripts/:id", scriptHandler.GetScript)
+	r.PUT("/scripts/:id", scriptHandler.UpdateScript)
 	r.POST("/scripts/:id/run", scriptHandler.RunScript)
 	r.DELETE("/scripts/:id", scriptHandler.DeleteScript)
 	r.GET("/tasks", taskHandler.ListTasks)
 	r.GET("/tasks/:id", taskHandler.GetTask)
 	r.DELETE("/tasks/:id", scriptHandler.DeleteTask)
+	r.POST("/tasks/:id/rerun", taskHandler.RerunTask)
 
 	// Start server
 	if err := r.Run(":8080"); err != nil {

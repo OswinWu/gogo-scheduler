@@ -6,7 +6,7 @@ import ScriptForm from './components/ScriptForm';
 import ScriptList from './components/ScriptList';
 import ScriptDialog from './components/ScriptDialog';
 import { motion } from 'framer-motion';
-import { PlusIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
 import { Toaster, toast } from 'react-hot-toast';
 
 function App() {
@@ -14,11 +14,32 @@ function App() {
   const [scripts, setScripts] = useState([]);
   const [isScriptDialogOpen, setIsScriptDialogOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [editingScript, setEditingScript] = useState(null);
+
+  const REFRESH_OPTIONS = [
+    { label: 'Disabled', value: 0 },
+    { label: '5s', value: 5000 },
+    { label: '10s', value: 10000 },
+    { label: '30s', value: 30000 },
+  ];
+  const [refreshInterval, setRefreshInterval] = useState(5000);
+
+  // Add base URL configuration
+  const API_BASE_URL = import.meta.env.PROD ? '' : 'http://localhost:8080';
 
   useEffect(() => {
     fetchTasks();
     fetchScripts();
-  }, []);
+    let timer;
+    if (refreshInterval > 0) {
+      timer = setInterval(fetchTasks, refreshInterval);
+    }
+
+    // Cleanup on unmount
+    return () => {
+      if (timer) clearInterval(timer);
+    };
+  }, [refreshInterval]);
 
   const getErrorMessage = async (response) => {
     try {
@@ -31,7 +52,7 @@ function App() {
 
   const fetchTasks = async () => {
     try {
-      const response = await fetch('http://localhost:8080/tasks');
+      const response = await fetch(`${API_BASE_URL}/tasks`);
       if (!response.ok) {
         const errorMessage = await getErrorMessage(response);
         throw new Error(errorMessage);
@@ -46,7 +67,7 @@ function App() {
 
   const fetchScripts = async () => {
     try {
-      const response = await fetch('http://localhost:8080/scripts');
+      const response = await fetch(`${API_BASE_URL}/scripts`);
       if (!response.ok) {
         const errorMessage = await getErrorMessage(response);
         throw new Error(errorMessage);
@@ -62,7 +83,7 @@ function App() {
   const handleAddScript = async (script) => {
     setIsLoading(true);
     try {
-      const response = await fetch('http://localhost:8080/scripts', {
+      const response = await fetch(`${API_BASE_URL}/scripts`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -87,15 +108,17 @@ function App() {
   const handleRunScript = async (scriptId) => {
     const runPromise = (async () => {
       try {
-        const response = await fetch(`http://localhost:8080/scripts/${scriptId}/run`, {
+        const response = await fetch(`${API_BASE_URL}/scripts/${scriptId}/run`, {
           method: 'POST',
         });
         if (!response.ok) {
           const errorMessage = await getErrorMessage(response);
           throw new Error(errorMessage);
         }
-        return 'Script executed successfully';
+        await fetchTasks();
+        return 'Script Submitted successfully';
       } catch (error) {
+        await fetchTasks();
         throw new Error(error.message);
       }
     })();
@@ -110,7 +133,7 @@ function App() {
   const handleDeleteScript = async (scriptId) => {
     const deletePromise = (async () => {
       try {
-        const response = await fetch(`http://localhost:8080/scripts/${scriptId}`, {
+        const response = await fetch(`${API_BASE_URL}/scripts/${scriptId}`, {
           method: 'DELETE',
         });
         if (!response.ok) {
@@ -133,7 +156,7 @@ function App() {
 
   const handleAddTask = async (task) => {
     try {
-      const response = await fetch('http://localhost:8080/tasks', {
+      const response = await fetch(`${API_BASE_URL}/tasks`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -151,7 +174,7 @@ function App() {
   const handleDeleteTask = async (taskId) => {
     const deletePromise = (async () => {
       try {
-        const response = await fetch(`http://localhost:8080/tasks/${taskId}`, {
+        const response = await fetch(`${API_BASE_URL}/tasks/${taskId}`, {
           method: 'DELETE',
         });
         if (!response.ok) {
@@ -174,7 +197,7 @@ function App() {
 
   const handleToggleTask = async (taskName) => {
     try {
-      const response = await fetch(`http://localhost:8080/tasks/${taskName}/toggle`, {
+      const response = await fetch(`${API_BASE_URL}/tasks/${taskName}/toggle`, {
         method: 'POST',
       });
       if (response.ok) {
@@ -183,6 +206,62 @@ function App() {
     } catch (error) {
       console.error('Error toggling task:', error);
     }
+  };
+
+  const handleEditScript = async (script) => {
+    setEditingScript(script);
+    setIsScriptDialogOpen(true);
+  };
+
+  const handleUpdateScript = async (updatedScript) => {
+    setIsLoading(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/scripts/${editingScript.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updatedScript),
+      });
+      if (!response.ok) {
+        const errorMessage = await getErrorMessage(response);
+        throw new Error(errorMessage);
+      }
+      await fetchScripts();
+      toast.success('Script updated successfully');
+      setIsScriptDialogOpen(false);
+      setEditingScript(null);
+    } catch (error) {
+      toast.error(error.message);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleRerunTask = async (taskId) => {
+    const rerunPromise = (async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/tasks/${taskId}/rerun`, {
+          method: 'POST',
+        });
+        if (!response.ok) {
+          const errorMessage = await getErrorMessage(response);
+          throw new Error(errorMessage);
+        }
+        await fetchTasks();
+        return 'Task rerun started';
+      } catch (error) {
+        await fetchTasks();
+        throw new Error(error.message);
+      }
+    })();
+
+    toast.promise(rerunPromise, {
+      loading: 'Starting task rerun...',
+      success: (message) => message,
+      error: (err) => err.message,
+    });
   };
 
   return (
@@ -194,7 +273,10 @@ function App() {
             <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              onClick={() => setIsScriptDialogOpen(true)}
+              onClick={() => {
+                setEditingScript(null);
+                setIsScriptDialogOpen(true);
+              }}
               className="inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
             >
               <PlusIcon className="h-4 w-4 mr-2" />
@@ -205,20 +287,47 @@ function App() {
             scripts={scripts} 
             onDelete={handleDeleteScript}
             onRun={handleRunScript}
+            onEdit={handleEditScript}
           />
         </div>
 
         <div>
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">Tasks</h2>
-          <TaskList tasks={tasks} onDelete={handleDeleteTask} />
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-semibold text-gray-900">Tasks</h2>
+            <div className="flex items-center space-x-2">
+              <select
+                value={refreshInterval}
+                onChange={(e) => setRefreshInterval(Number(e.target.value))}
+                className="inline-flex items-center px-2 py-1 text-sm bg-transparent border border-gray-300 rounded hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              >
+                {REFRESH_OPTIONS.map(option => (
+                  <option key={option.value} value={option.value}>
+                    {option.value === refreshInterval ? `↻ ${option.label}` : option.label}
+                  </option>
+                ))}
+              </select>
+              <button
+                onClick={fetchTasks}
+                className="p-1 text-gray-500 hover:text-gray-700 rounded hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                title="Refresh manually"
+              >
+                <ArrowPathIcon className="h-5 w-5" />
+              </button>
+            </div>
+          </div>
+          <TaskList tasks={tasks} onDelete={handleDeleteTask} onRerun={handleRerunTask} />
         </div>
       </div>
 
       <ScriptDialog
         isOpen={isScriptDialogOpen}
-        onClose={() => setIsScriptDialogOpen(false)}
-        onSubmit={handleAddScript}
+        onClose={() => {
+          setIsScriptDialogOpen(false);
+          setEditingScript(null);
+        }}
+        onSubmit={editingScript ? handleUpdateScript : handleAddScript}
         isLoading={isLoading}
+        initialScript={editingScript}
       />
 
       <Toaster 

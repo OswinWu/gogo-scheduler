@@ -1,14 +1,20 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 
-function ScriptForm({ onSubmit, isLoading }) {
-  const [script, setScript] = useState({
+function ScriptForm({ onSubmit, isLoading, initialScript }) {
+  const [script, setScript] = useState(initialScript || {
     name: '',
     content: '',
     schedule: '',
     type: 'shell',
   });
   const [error, setError] = useState(null);
+
+  useEffect(() => {
+    if (initialScript) {
+      setScript(initialScript);
+    }
+  }, [initialScript]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();

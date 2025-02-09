@@ -49,3 +49,22 @@ func (h *TaskHandler) GetTask(c *gin.Context) {
 
 	c.JSON(http.StatusOK, task)
 }
+
+func (h *TaskHandler) RerunTask(c *gin.Context) {
+	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
+		return
+	}
+
+	output, err := h.service.RerunTask(uint(id))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Task rerun started",
+		"task_id": output,
+	})
+}
