@@ -8,7 +8,7 @@ import (
 	"log"
 
 	"github.com/gin-gonic/gin"
-	"gorm.io/driver/sqlite"
+	"github.com/glebarez/sqlite"
 	"gorm.io/gorm"
 )
 
@@ -35,6 +35,18 @@ func main() {
 	// Setup Gin router
 	r := gin.Default()
 
+	// CORS middleware
+	r.Use(func(c *gin.Context) {
+		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+		c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+		if c.Request.Method == "OPTIONS" {
+			c.AbortWithStatus(204)
+			return
+		}
+		c.Next()
+	})
+
 	// Routes
 	r.POST("/scripts", scriptHandler.CreateScript)
 	r.GET("/scripts", scriptHandler.ListScripts)
@@ -43,6 +55,7 @@ func main() {
 	r.DELETE("/scripts/:id", scriptHandler.DeleteScript)
 	r.GET("/tasks", taskHandler.ListTasks)
 	r.GET("/tasks/:id", taskHandler.GetTask)
+	r.DELETE("/tasks/:id", scriptHandler.DeleteTask)
 
 	// Start server
 	if err := r.Run(":8080"); err != nil {

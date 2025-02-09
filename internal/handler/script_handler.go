@@ -100,3 +100,21 @@ func (h *ScriptHandler) DeleteScript(c *gin.Context) {
 
 	c.Status(http.StatusNoContent)
 }
+
+func (h *ScriptHandler) DeleteTask(c *gin.Context) {
+	id := c.Param("id")
+
+	// Convert string ID to uint
+	taskID, err := strconv.ParseUint(id, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid task ID"})
+		return
+	}
+
+	if err := h.service.DeleteTask(uint(taskID)); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.Status(http.StatusNoContent)
+}

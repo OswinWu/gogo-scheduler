@@ -37,3 +37,7 @@ func (r *TaskRepository) List(scriptID *uint) ([]model.Task, error) {
 func (r *TaskRepository) Update(task *model.Task) error {
 	return r.db.Save(task).Error
 }
+
+func (r *TaskRepository) Delete(id uint) error {
+	return r.db.Delete(&model.Task{}, id).Error
+}

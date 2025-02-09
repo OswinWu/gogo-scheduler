@@ -28,17 +28,22 @@ func (s *ScriptService) CreateScript(name, scriptType, content string) (*model.S
 	return script, err
 }
 
-func (s *ScriptService) RunScript(id uint) (string, error) {
-	script, err := s.repo.GetByID(id)
+func (s *ScriptService) RunScript(scriptID uint) (string, error) {
+	script, err := s.repo.GetByID(scriptID)
 	if err != nil {
 		return "", err
 	}
 
-	now := time.Now()
+	// Generate task name: script_id + script_name + run_date
+	taskName := fmt.Sprintf("%d_%s_%s", scriptID, script.Name, time.Now().Format("20060102_150405"))
+
+	// Create task record
 	task := &model.Task{
-		ScriptID:  script.ID,
-		Status:    "running",
-		StartTime: &now,
+		Name:       taskName,
+		ScriptID:   script.ID,
+		ScriptName: script.Name,
+		Status:     "running",
+		LastRun:    time.Now(),
 	}
 	if err := s.taskRepo.Create(task); err != nil {
 		return "", err
@@ -93,4 +98,8 @@ func (s *ScriptService) ListTasks(scriptID *uint) ([]model.Task, error) {
 
 func (s *ScriptService) GetTask(id uint) (*model.Task, error) {
 	return s.taskRepo.GetByID(id)
+}
+
+func (s *ScriptService) DeleteTask(id uint) error {
+	return s.taskRepo.Delete(id)
 }
