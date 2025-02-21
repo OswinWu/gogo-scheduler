@@ -24,8 +24,8 @@ function App() {
   ];
   const [refreshInterval, setRefreshInterval] = useState(5000);
 
-  // Add base URL configuration
-  const API_BASE_URL = import.meta.env.PROD ? '' : 'http://localhost:8080';
+  // Modify API_BASE_URL configuration
+  const API_BASE_URL = import.meta.env.PROD ? '/api' : 'http://localhost:8080/api';
 
   useEffect(() => {
     fetchTasks();

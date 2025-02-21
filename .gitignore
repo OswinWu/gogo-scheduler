@@ -24,3 +24,10 @@ go.work.sum
 
 # env file
 .env
+
+# 前端构建输出目录
+/dist
+/build
+
+# 数据目录
+/data/

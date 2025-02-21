@@ -6,6 +6,7 @@ import (
 	"gogo-scheduler/internal/repository"
 	"gogo-scheduler/internal/service"
 	"log"
+	"os"
 
 	"github.com/gin-gonic/gin"
 	"github.com/glebarez/sqlite"
@@ -13,8 +14,13 @@ import (
 )
 
 func main() {
-	// Initialize database
-	db, err := gorm.Open(sqlite.Open("scripts.db"), &gorm.Config{})
+	// 确保数据目录存在
+	if err := os.MkdirAll("data", 0755); err != nil {
+		log.Fatal("Failed to create data directory:", err)
+	}
+
+	// Initialize database with new path
+	db, err := gorm.Open(sqlite.Open("data/scripts.db"), &gorm.Config{})
 	if err != nil {
 		log.Fatal("Failed to connect to database:", err)
 	}
@@ -35,6 +41,10 @@ func main() {
 	// Setup Gin router
 	r := gin.Default()
 
+	// 添加静态文件服务，将前端构建后的文件放在项目根目录的 dist 目录下
+	r.Static("/static", "./dist")
+	r.Static("/assets", "./dist/assets")
+
 	// CORS middleware
 	r.Use(func(c *gin.Context) {
 		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
@@ -47,17 +57,20 @@ func main() {
 		c.Next()
 	})
 
-	// Routes
-	r.POST("/scripts", scriptHandler.CreateScript)
-	r.GET("/scripts", scriptHandler.ListScripts)
-	r.GET("/scripts/:id", scriptHandler.GetScript)
-	r.PUT("/scripts/:id", scriptHandler.UpdateScript)
-	r.POST("/scripts/:id/run", scriptHandler.RunScript)
-	r.DELETE("/scripts/:id", scriptHandler.DeleteScript)
-	r.GET("/tasks", taskHandler.ListTasks)
-	r.GET("/tasks/:id", taskHandler.GetTask)
-	r.DELETE("/tasks/:id", scriptHandler.DeleteTask)
-	r.POST("/tasks/:id/rerun", taskHandler.RerunTask)
+	// API Routes
+	api := r.Group("/api")
+	{
+		api.POST("/scripts", scriptHandler.CreateScript)
+		api.GET("/scripts", scriptHandler.ListScripts)
+		api.GET("/scripts/:id", scriptHandler.GetScript)
+		api.PUT("/scripts/:id", scriptHandler.UpdateScript)
+		api.POST("/scripts/:id/run", scriptHandler.RunScript)
+		api.DELETE("/scripts/:id", scriptHandler.DeleteScript)
+		api.GET("/tasks", taskHandler.ListTasks)
+		api.GET("/tasks/:id", taskHandler.GetTask)
+		api.DELETE("/tasks/:id", scriptHandler.DeleteTask)
+		api.POST("/tasks/:id/rerun", taskHandler.RerunTask)
+	}
 
 	// Start server
 	if err := r.Run(":8080"); err != nil {

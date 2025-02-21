@@ -1,0 +1,41 @@
+# 版本控制
+.git
+.gitignore
+
+# 开发环境文件
+.env
+.env.*
+*.log
+
+# 依赖目录
+node_modules
+vendor
+
+# 构建输出
+dist
+build
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# 数据库文件
+*.db
+*.sqlite
+
+# IDE 配置
+.idea
+.vscode
+*.swp
+*.swo
+
+# 测试文件
+*_test.go
+*.test
+
+# 其他
+.DS_Store
+README.md
+Dockerfile
+.dockerignore 
