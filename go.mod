@@ -7,7 +7,9 @@ toolchain go1.23.4
 require (
 	github.com/gin-gonic/gin v1.10.0
 	github.com/glebarez/sqlite v1.11.0
+	github.com/golang-jwt/jwt/v5 v5.2.1
 	github.com/panjf2000/ants/v2 v2.11.1
+	golang.org/x/crypto v0.33.0
 	gorm.io/gorm v1.25.12
 )
 
@@ -38,7 +40,6 @@ require (
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
 	github.com/ugorji/go/codec v1.2.12 // indirect
 	golang.org/x/arch v0.14.0 // indirect
-	golang.org/x/crypto v0.33.0 // indirect
 	golang.org/x/exp v0.0.0-20250218142911-aa4b98e5adaa // indirect
 	golang.org/x/net v0.35.0 // indirect
 	golang.org/x/sync v0.11.0 // indirect

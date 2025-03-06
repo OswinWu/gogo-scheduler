@@ -1,18 +1,22 @@
 import { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import Layout from './components/Layout';
 import TaskForm from './components/TaskForm';
 import TaskList from './components/TaskList';
 import ScriptForm from './components/ScriptForm';
 import ScriptList from './components/ScriptList';
 import ScriptDialog from './components/ScriptDialog';
+import ChangePassword from './components/ChangePassword';
 import { motion } from 'framer-motion';
-import { PlusIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, ArrowPathIcon, KeyIcon } from '@heroicons/react/24/outline';
 import { Toaster, toast } from 'react-hot-toast';
 
 function App() {
+  const navigate = useNavigate();
   const [tasks, setTasks] = useState([]);
   const [scripts, setScripts] = useState([]);
   const [isScriptDialogOpen, setIsScriptDialogOpen] = useState(false);
+  const [isChangePasswordDialogOpen, setIsChangePasswordDialogOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [editingScript, setEditingScript] = useState(null);
 
@@ -48,6 +52,12 @@ function App() {
     } catch (e) {
       return `HTTP error! status: ${response.status}`;
     }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    navigate('/login');
   };
 
   const fetchTasks = async () => {
@@ -266,6 +276,25 @@ function App() {
 
   return (
     <Layout>
+      <div className="flex justify-between items-center mb-4">
+        <h1 className="text-2xl font-bold text-gray-900">Gogo Scheduler</h1>
+        <div className="flex items-center space-x-4">
+          <button
+            onClick={() => setIsChangePasswordDialogOpen(true)}
+            className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 hover:text-gray-900"
+          >
+            <KeyIcon className="h-5 w-5 mr-2" />
+            Change Password
+          </button>
+          <button
+            onClick={handleLogout}
+            className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 hover:text-gray-900"
+          >
+            Logout
+          </button>
+        </div>
+      </div>
+
       <div className="space-y-8">
         <div>
           <div className="flex justify-between items-center mb-4">
@@ -328,6 +357,11 @@ function App() {
         onSubmit={editingScript ? handleUpdateScript : handleAddScript}
         isLoading={isLoading}
         initialScript={editingScript}
+      />
+
+      <ChangePassword
+        isOpen={isChangePasswordDialogOpen}
+        onClose={() => setIsChangePasswordDialogOpen(false)}
       />
 
       <Toaster 

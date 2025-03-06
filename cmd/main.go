@@ -7,6 +7,7 @@ import (
 	"gogo-scheduler/internal/service"
 	"log"
 	"os"
+	"path/filepath"
 
 	"github.com/gin-gonic/gin"
 	"github.com/glebarez/sqlite"
@@ -26,7 +27,7 @@ func main() {
 	}
 
 	// Auto migrate the schema
-	err = db.AutoMigrate(&model.Script{}, &model.Task{})
+	err = db.AutoMigrate(&model.Script{}, &model.Task{}, &model.User{})
 	if err != nil {
 		log.Fatal("Failed to migrate database:", err)
 	}
@@ -34,22 +35,27 @@ func main() {
 	// Initialize dependencies
 	scriptRepo := repository.NewScriptRepository(db)
 	taskRepo := repository.NewTaskRepository(db)
+	userRepo := repository.NewUserRepository(db)
 	scriptService := service.NewScriptService(scriptRepo, taskRepo)
+	authService := service.NewAuthService(userRepo, "your-secret-key") // Replace with environment variable in production
 	scriptHandler := handler.NewScriptHandler(scriptService)
 	taskHandler := handler.NewTaskHandler(scriptService)
+	authHandler := handler.NewAuthHandler(authService)
+
+	// Create admin if not exists
+	err = userRepo.CreateAdminIfNotExists()
+	if err != nil {
+		log.Fatal("Failed to create admin:", err)
+	}
 
 	// Setup Gin router
 	r := gin.Default()
-
-	// 添加静态文件服务，将前端构建后的文件放在项目根目录的 dist 目录下
-	r.Static("/static", "./dist")
-	r.Static("/assets", "./dist/assets")
 
 	// CORS middleware
 	r.Use(func(c *gin.Context) {
 		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
 		c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 		if c.Request.Method == "OPTIONS" {
 			c.AbortWithStatus(204)
 			return
@@ -60,6 +66,12 @@ func main() {
 	// API Routes
 	api := r.Group("/api")
 	{
+		// Auth routes
+		api.POST("/auth/register", authHandler.Register)
+		api.POST("/auth/login", authHandler.Login)
+		api.POST("/auth/change-password", handler.AuthMiddleware(authService), authHandler.ChangePassword)
+
+		// Script routes
 		api.POST("/scripts", scriptHandler.CreateScript)
 		api.GET("/scripts", scriptHandler.ListScripts)
 		api.GET("/scripts/:id", scriptHandler.GetScript)
@@ -71,6 +83,15 @@ func main() {
 		api.DELETE("/tasks/:id", scriptHandler.DeleteTask)
 		api.POST("/tasks/:id/rerun", taskHandler.RerunTask)
 	}
+
+	// Serve static files
+	r.Static("/static", "./dist")
+	r.Static("/assets", "./dist/assets")
+
+	// Serve index.html for all other routes
+	r.NoRoute(func(c *gin.Context) {
+		c.File(filepath.Join("dist", "index.html"))
+	})
 
 	// Start server
 	if err := r.Run(":8080"); err != nil {
