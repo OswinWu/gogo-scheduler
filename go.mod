@@ -7,7 +7,7 @@ toolchain go1.23.4
 require (
 	github.com/gin-gonic/gin v1.10.0
 	github.com/glebarez/sqlite v1.11.0
-	github.com/golang-jwt/jwt/v5 v5.2.1
+	github.com/golang-jwt/jwt/v5 v5.2.2
 	github.com/panjf2000/ants/v2 v2.11.1
 	golang.org/x/crypto v0.33.0
 	gorm.io/gorm v1.25.12
