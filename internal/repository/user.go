@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"errors"
 	"gogo-scheduler/internal/model"
 
 	"gorm.io/gorm"
@@ -22,6 +23,9 @@ func (r *UserRepository) FindByUsername(username string) (*model.User, error) {
 	var user model.User
 	err := r.db.Where("username = ?", username).First(&user).Error
 	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
 		return nil, err
 	}
 	return &user, nil
@@ -44,8 +48,10 @@ func (r *UserRepository) CreateAdminIfNotExists() error {
 	if admin != nil {
 		return nil
 	}
-	admin.Username = "admin"
-	admin.Password = "admin"
+	admin = &model.User{
+		Username: "admin",
+		Password: "admin",
+	}
 	err = admin.HashPassword()
 	if err != nil {
 		return err
