@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"gogo-scheduler/internal/handler"
 	"gogo-scheduler/internal/model"
 	"gogo-scheduler/internal/repository"
@@ -8,14 +9,17 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"time"
 
-	"github.com/gin-gonic/gin"
+	"github.com/cloudwego/hertz/pkg/app"
+	"github.com/cloudwego/hertz/pkg/app/server"
 	"github.com/glebarez/sqlite"
+	"github.com/hertz-contrib/cors"
 	"gorm.io/gorm"
 )
 
 func main() {
-	// 确保数据目录存在
+	// Ensure data directory exists
 	if err := os.MkdirAll("data", 0755); err != nil {
 		log.Fatal("Failed to create data directory:", err)
 	}
@@ -42,59 +46,51 @@ func main() {
 	taskHandler := handler.NewTaskHandler(scriptService)
 	authHandler := handler.NewAuthHandler(authService)
 
-	// Create admin if not exists
-	err = userRepo.CreateAdminIfNotExists()
-	if err != nil {
-		log.Fatal("Failed to create admin:", err)
-	}
-
-	// Setup Gin router
-	r := gin.Default()
+	// Setup Hertz server
+	h := server.Default(server.WithHostPorts("0.0.0.0:8080"))
 
 	// CORS middleware
-	r.Use(func(c *gin.Context) {
-		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
-		c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
-		if c.Request.Method == "OPTIONS" {
-			c.AbortWithStatus(204)
-			return
-		}
-		c.Next()
+	h.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"*"},                                       // Allowed domains, need to bring schema
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}, // Allowed request methods
+		AllowHeaders:     []string{"Origin", "Authorization", "Content-Type"}, // Allowed request headers
+		ExposeHeaders:    []string{"Content-Length"},                          // Request headers allowed in the upload_file
+		AllowCredentials: true,                                                // Whether cookies are attached
+		MaxAge:           36 * time.Hour,                                      // Maximum length of upload_file-side cache preflash requests (seconds)
+	}))
+
+	h.LoadHTMLGlob("dist/index.html")
+	h.Static("/", "./dist")
+	h.GET("/", func(c context.Context, ctx *app.RequestContext) {
+		ctx.HTML(200, "index.html", nil)
 	})
-
-	// API Routes
-	api := r.Group("/api")
-	{
-		// Auth routes
-		api.POST("/auth/register", authHandler.Register)
-		api.POST("/auth/login", authHandler.Login)
-		api.POST("/auth/change-password", handler.AuthMiddleware(authService), authHandler.ChangePassword)
-
-		// Script routes
-		api.POST("/scripts", scriptHandler.CreateScript)
-		api.GET("/scripts", scriptHandler.ListScripts)
-		api.GET("/scripts/:id", scriptHandler.GetScript)
-		api.PUT("/scripts/:id", scriptHandler.UpdateScript)
-		api.POST("/scripts/:id/run", scriptHandler.RunScript)
-		api.DELETE("/scripts/:id", scriptHandler.DeleteScript)
-		api.GET("/tasks", taskHandler.ListTasks)
-		api.GET("/tasks/:id", taskHandler.GetTask)
-		api.DELETE("/tasks/:id", scriptHandler.DeleteTask)
-		api.POST("/tasks/:id/rerun", taskHandler.RerunTask)
-	}
-
-	// Serve static files
-	r.Static("/static", "./dist")
-	r.Static("/assets", "./dist/assets")
-
 	// Serve index.html for all other routes
-	r.NoRoute(func(c *gin.Context) {
+	h.NoRoute(func(ctx context.Context, c *app.RequestContext) {
 		c.File(filepath.Join("dist", "index.html"))
 	})
 
+	// no auth
+	h.POST("/api/auth/login", authHandler.Login)
+
+	g := h.Group("/api/", handler.AuthMiddleware(authService))
+	// Define routes
+	// Auth routes
+	g.POST("/auth/change-password", authHandler.ChangePassword)
+	// Script routes
+	g.POST("/scripts", scriptHandler.CreateScript)
+	g.GET("/scripts", scriptHandler.ListScripts)
+	g.GET("/scripts/:id", scriptHandler.GetScript)
+	g.PUT("/scripts/:id", scriptHandler.UpdateScript)
+	g.POST("/scripts/:id/run", scriptHandler.RunScript)
+	g.DELETE("/scripts/:id", scriptHandler.DeleteScript)
+
+	// Task routes
+	g.GET("/tasks", taskHandler.ListTasks)
+	g.GET("/tasks/:id", taskHandler.GetTask)
+	g.DELETE("/tasks/:id", taskHandler.DeleteTask)
+	g.POST("/tasks/:id/rerun", taskHandler.RerunTask)
 	// Start server
-	if err := r.Run(":8080"); err != nil {
+	if err := h.Run(); err != nil {
 		log.Fatal("Failed to start server:", err)
 	}
 }

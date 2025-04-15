@@ -1,38 +1,40 @@
 package handler
 
 import (
+	"context"
 	"net/http"
 	"strings"
 
 	"gogo-scheduler/internal/service"
 
-	"github.com/gin-gonic/gin"
+	"github.com/cloudwego/hertz/pkg/app"
 )
 
-func AuthMiddleware(authService *service.AuthService) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		authHeader := c.GetHeader("Authorization")
-		if authHeader == "" {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "authorization header is required"})
-			c.Abort()
+func AuthMiddleware(authService *service.AuthService) app.HandlerFunc {
+	return func(c context.Context, ctx *app.RequestContext) {
+		authHeaderStr := ctx.GetHeader("Authorization")
+		if len(authHeaderStr) == 0 {
+			ctx.JSON(http.StatusUnauthorized, map[string]string{"error": "authorization header is required"})
+			ctx.Abort()
 			return
 		}
 
+		authHeader := string(authHeaderStr)
 		parts := strings.Split(authHeader, " ")
 		if len(parts) != 2 || parts[0] != "Bearer" {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid authorization header format"})
-			c.Abort()
+			ctx.JSON(http.StatusUnauthorized, map[string]string{"error": "invalid authorization header format"})
+			ctx.Abort()
 			return
 		}
 
 		user, err := authService.ValidateToken(parts[1])
 		if err != nil {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid token"})
-			c.Abort()
+			ctx.JSON(http.StatusUnauthorized, map[string]string{"error": "invalid token"})
+			ctx.Abort()
 			return
 		}
 
-		c.Set("user", user)
-		c.Next()
+		ctx.Set("user", user)
+		ctx.Next(c)
 	}
 }

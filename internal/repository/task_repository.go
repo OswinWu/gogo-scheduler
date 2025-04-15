@@ -18,13 +18,13 @@ func (r *TaskRepository) Create(task *model.Task) error {
 	return r.db.Create(task).Error
 }
 
-func (r *TaskRepository) GetByID(id uint) (*model.Task, error) {
+func (r *TaskRepository) GetByID(id int64) (*model.Task, error) {
 	var task model.Task
 	err := r.db.Preload("Script").First(&task, id).Error
 	return &task, err
 }
 
-func (r *TaskRepository) List(scriptID *uint) ([]model.Task, error) {
+func (r *TaskRepository) List(scriptID *int64) ([]model.Task, error) {
 	var tasks []model.Task
 	query := r.db.Preload("Script")
 	if scriptID != nil {
@@ -38,6 +38,6 @@ func (r *TaskRepository) Update(task *model.Task) error {
 	return r.db.Save(task).Error
 }
 
-func (r *TaskRepository) Delete(id uint) error {
+func (r *TaskRepository) Delete(id int64) error {
 	return r.db.Delete(&model.Task{}, id).Error
 }

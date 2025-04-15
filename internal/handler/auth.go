@@ -1,11 +1,14 @@
 package handler
 
 import (
+	"context"
+	"errors"
 	"net/http"
 
 	"gogo-scheduler/internal/model"
 	"gogo-scheduler/internal/service"
 
+	"github.com/cloudwego/hertz/pkg/app"
 	"github.com/gin-gonic/gin"
 )
 
@@ -19,26 +22,26 @@ func NewAuthHandler(authService *service.AuthService) *AuthHandler {
 	}
 }
 
-func (h *AuthHandler) Register(c *gin.Context) {
+func (h *AuthHandler) Register(ctx context.Context, c *app.RequestContext) {
 	var req model.LoginRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	if err := c.BindJSON(&req); err != nil {
+		HandleError(c, http.StatusBadRequest, err)
 		return
 	}
 
 	user, err := h.authService.Register(req.Username, req.Password)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		HandleError(c, http.StatusBadRequest, err)
 		return
 	}
 
 	c.JSON(http.StatusCreated, user)
 }
 
-func (h *AuthHandler) Login(c *gin.Context) {
+func (h *AuthHandler) Login(ctx context.Context, c *app.RequestContext) {
 	var req model.LoginRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	if err := c.BindJSON(&req); err != nil {
+		HandleError(c, http.StatusBadRequest, err)
 		return
 	}
 
@@ -51,29 +54,30 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	c.JSON(http.StatusOK, resp)
 }
 
-func (h *AuthHandler) ChangePassword(c *gin.Context) {
+func (h *AuthHandler) ChangePassword(ctx context.Context, c *app.RequestContext) {
+	AuthMiddleware(h.authService)(ctx, c)
 	var req struct {
 		OldPassword string `json:"old_password" binding:"required"`
 		NewPassword string `json:"new_password" binding:"required"`
 	}
 
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	if err := c.BindJSON(&req); err != nil {
+		HandleError(c, http.StatusBadRequest, err)
 		return
 	}
 
 	// Get user from context (set by AuthMiddleware)
 	user, exists := c.Get("user")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not found"})
+		HandleError(c, http.StatusUnauthorized, errors.New("user not found"))
 		return
 	}
 
 	err := h.authService.ChangePassword(user.(*model.User).Username, req.OldPassword, req.NewPassword)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		HandleError(c, http.StatusBadRequest, err)
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "password changed successfully"})
+	c.JSON(http.StatusOK, map[string]string{"message": "password changed successfully"})
 }

@@ -7,8 +7,8 @@ import (
 )
 
 type Task struct {
-	ID         uint           `json:"id" gorm:"primaryKey"`
-	ScriptID   uint           `json:"script_id" gorm:"not null"`
+	ID         int64          `json:"id" gorm:"primaryKey"`
+	ScriptID   int64          `json:"script_id" gorm:"not null"`
 	Script     Script         `json:"script" gorm:"foreignKey:ScriptID"`
 	Status     string         `json:"status"` // pending, running, success, failed
 	Output     string         `json:"output"`

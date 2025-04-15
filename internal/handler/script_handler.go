@@ -1,10 +1,12 @@
 package handler
 
 import (
+	"context"
 	"gogo-scheduler/internal/service"
 	"net/http"
 	"strconv"
 
+	"github.com/cloudwego/hertz/pkg/app"
 	"github.com/gin-gonic/gin"
 )
 
@@ -16,35 +18,35 @@ func NewScriptHandler(service *service.ScriptService) *ScriptHandler {
 	return &ScriptHandler{service: service}
 }
 
-func (h *ScriptHandler) CreateScript(c *gin.Context) {
+func (h *ScriptHandler) CreateScript(ctx context.Context, c *app.RequestContext) {
 	var script struct {
 		Name    string `json:"name" binding:"required"`
 		Type    string `json:"type" binding:"required"`
 		Content string `json:"content" binding:"required"`
 	}
 
-	if err := c.ShouldBindJSON(&script); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	if err := c.BindJSON(&script); err != nil {
+		HandleError(c, http.StatusBadRequest, err)
 		return
 	}
 
 	result, err := h.service.CreateScript(script.Name, script.Type, script.Content)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		HandleError(c, http.StatusInternalServerError, err)
 		return
 	}
 
 	c.JSON(http.StatusCreated, result)
 }
 
-func (h *ScriptHandler) RunScript(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+func (h *ScriptHandler) RunScript(ctx context.Context, c *app.RequestContext) {
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
+		HandleError(c, http.StatusBadRequest, err)
 		return
 	}
 
-	output, err := h.service.RunScriptAsync(uint(id))
+	output, err := h.service.RunScriptAsync(id)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error":  err.Error(),
@@ -60,69 +62,66 @@ func (h *ScriptHandler) RunScript(c *gin.Context) {
 	})
 }
 
-func (h *ScriptHandler) GetScript(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+func (h *ScriptHandler) GetScript(ctx context.Context, c *app.RequestContext) {
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
+		HandleError(c, http.StatusBadRequest, err)
 		return
 	}
 
-	script, err := h.service.GetScript(uint(id))
+	script, err := h.service.GetScript(id)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "script not found"})
+		HandleError(c, http.StatusNotFound, err)
 		return
 	}
 
 	c.JSON(http.StatusOK, script)
 }
 
-func (h *ScriptHandler) ListScripts(c *gin.Context) {
+func (h *ScriptHandler) ListScripts(ctx context.Context, c *app.RequestContext) {
 	scripts, err := h.service.ListScripts()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		HandleError(c, http.StatusInternalServerError, err)
 		return
 	}
 
 	c.JSON(http.StatusOK, scripts)
 }
 
-func (h *ScriptHandler) DeleteScript(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+func (h *ScriptHandler) DeleteScript(ctx context.Context, c *app.RequestContext) {
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
 		return
 	}
 
-	if err := h.service.DeleteScript(uint(id)); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	if err := h.service.DeleteScript(id); err != nil {
+		HandleError(c, http.StatusInternalServerError, err)
 		return
 	}
 
 	c.Status(http.StatusNoContent)
 }
 
-func (h *ScriptHandler) DeleteTask(c *gin.Context) {
-	id := c.Param("id")
-
-	// Convert string ID to uint
-	taskID, err := strconv.ParseUint(id, 10, 64)
+func (h *ScriptHandler) DeleteTask(ctx context.Context, c *app.RequestContext) {
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid task ID"})
+		HandleError(c, http.StatusBadRequest, err)
 		return
 	}
 
-	if err := h.service.DeleteTask(uint(taskID)); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	if err := h.service.DeleteTask(id); err != nil {
+		HandleError(c, http.StatusInternalServerError, err)
 		return
 	}
 
 	c.Status(http.StatusNoContent)
 }
 
-func (h *ScriptHandler) UpdateScript(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+func (h *ScriptHandler) UpdateScript(ctx context.Context, c *app.RequestContext) {
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
+		HandleError(c, http.StatusBadRequest, err)
 		return
 	}
 
@@ -132,14 +131,14 @@ func (h *ScriptHandler) UpdateScript(c *gin.Context) {
 		Content string `json:"content" binding:"required"`
 	}
 
-	if err := c.ShouldBindJSON(&script); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	if err := c.BindJSON(&script); err != nil {
+		HandleError(c, http.StatusBadRequest, err)
 		return
 	}
 
-	result, err := h.service.UpdateScript(uint(id), script.Name, script.Type, script.Content)
+	result, err := h.service.UpdateScript(id, script.Name, script.Type, script.Content)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		HandleError(c, http.StatusInternalServerError, err)
 		return
 	}
 

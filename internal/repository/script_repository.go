@@ -18,7 +18,7 @@ func (r *ScriptRepository) Create(script *model.Script) error {
 	return r.db.Create(script).Error
 }
 
-func (r *ScriptRepository) GetByID(id uint) (*model.Script, error) {
+func (r *ScriptRepository) GetByID(id int64) (*model.Script, error) {
 	var script model.Script
 	err := r.db.First(&script, id).Error
 	return &script, err
@@ -34,6 +34,6 @@ func (r *ScriptRepository) Update(script *model.Script) error {
 	return r.db.Save(script).Error
 }
 
-func (r *ScriptRepository) Delete(id uint) error {
+func (r *ScriptRepository) Delete(id int64) error {
 	return r.db.Delete(&model.Script{}, id).Error
 }

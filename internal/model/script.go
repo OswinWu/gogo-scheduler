@@ -7,7 +7,7 @@ import (
 )
 
 type Script struct {
-	ID        uint           `json:"id" gorm:"primaryKey"`
+	ID        int64          `json:"id" gorm:"primaryKey"`
 	Name      string         `json:"name" gorm:"not null"`
 	Type      string         `json:"type" gorm:"not null"` // python or shell
 	Content   string         `json:"content" gorm:"not null"`

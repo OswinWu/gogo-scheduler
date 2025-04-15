@@ -32,7 +32,7 @@ func (s *ScriptService) CreateScript(name, scriptType, content string) (*model.S
 	return script, err
 }
 
-func (s *ScriptService) RunScriptAsync(scriptID uint) (uint, error) {
+func (s *ScriptService) RunScriptAsync(scriptID int64) (int64, error) {
 	script, err := s.repo.GetByID(scriptID)
 	if err != nil {
 		return 0, err
@@ -63,7 +63,7 @@ func (s *ScriptService) RunScriptAsync(scriptID uint) (uint, error) {
 
 }
 
-func (s *ScriptService) RunScript(scriptID, taskID uint) (string, error) {
+func (s *ScriptService) RunScript(scriptID, taskID int64) (string, error) {
 	script, err := s.repo.GetByID(scriptID)
 	if err != nil {
 		return "", err
@@ -112,7 +112,7 @@ func (s *ScriptService) RunScript(scriptID, taskID uint) (string, error) {
 	return output.String(), nil
 }
 
-func (s *ScriptService) GetScript(id uint) (*model.Script, error) {
+func (s *ScriptService) GetScript(id int64) (*model.Script, error) {
 	return s.repo.GetByID(id)
 }
 
@@ -120,23 +120,23 @@ func (s *ScriptService) ListScripts() ([]model.Script, error) {
 	return s.repo.List()
 }
 
-func (s *ScriptService) DeleteScript(id uint) error {
+func (s *ScriptService) DeleteScript(id int64) error {
 	return s.repo.Delete(id)
 }
 
-func (s *ScriptService) ListTasks(scriptID *uint) ([]model.Task, error) {
+func (s *ScriptService) ListTasks(scriptID *int64) ([]model.Task, error) {
 	return s.taskRepo.List(scriptID)
 }
 
-func (s *ScriptService) GetTask(id uint) (*model.Task, error) {
+func (s *ScriptService) GetTask(id int64) (*model.Task, error) {
 	return s.taskRepo.GetByID(id)
 }
 
-func (s *ScriptService) DeleteTask(id uint) error {
+func (s *ScriptService) DeleteTask(id int64) error {
 	return s.taskRepo.Delete(id)
 }
 
-func (s *ScriptService) UpdateScript(id uint, name, scriptType, content string) (*model.Script, error) {
+func (s *ScriptService) UpdateScript(id int64, name, scriptType, content string) (*model.Script, error) {
 	script, err := s.repo.GetByID(id)
 	if err != nil {
 		return nil, err
@@ -150,7 +150,7 @@ func (s *ScriptService) UpdateScript(id uint, name, scriptType, content string) 
 	return script, err
 }
 
-func (s *ScriptService) RerunTask(taskID uint) (uint, error) {
+func (s *ScriptService) RerunTask(taskID int64) (int64, error) {
 	task, err := s.taskRepo.GetByID(taskID)
 	if err != nil {
 		return 0, err

@@ -62,7 +62,13 @@ function App() {
 
   const fetchTasks = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/tasks`);
+      const response = await fetch(`${API_BASE_URL}/tasks`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+      });
       if (!response.ok) {
         const errorMessage = await getErrorMessage(response);
         throw new Error(errorMessage);
@@ -77,7 +83,13 @@ function App() {
 
   const fetchScripts = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/scripts`);
+      const response = await fetch(`${API_BASE_URL}/scripts`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+      });
       if (!response.ok) {
         const errorMessage = await getErrorMessage(response);
         throw new Error(errorMessage);
@@ -97,6 +109,7 @@ function App() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
         },
         body: JSON.stringify(script),
       });
@@ -120,6 +133,10 @@ function App() {
       try {
         const response = await fetch(`${API_BASE_URL}/scripts/${scriptId}/run`, {
           method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          },
         });
         if (!response.ok) {
           const errorMessage = await getErrorMessage(response);
@@ -145,6 +162,10 @@ function App() {
       try {
         const response = await fetch(`${API_BASE_URL}/scripts/${scriptId}`, {
           method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          },
         });
         if (!response.ok) {
           const errorMessage = await getErrorMessage(response);
@@ -170,6 +191,7 @@ function App() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
         },
         body: JSON.stringify(task),
       });
@@ -186,6 +208,11 @@ function App() {
       try {
         const response = await fetch(`${API_BASE_URL}/tasks/${taskId}`, {
           method: 'DELETE',
+
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          },
         });
         if (!response.ok) {
           const errorMessage = await getErrorMessage(response);
@@ -209,6 +236,11 @@ function App() {
     try {
       const response = await fetch(`${API_BASE_URL}/tasks/${taskName}/toggle`, {
         method: 'POST',
+
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
       });
       if (response.ok) {
         fetchTasks();
@@ -230,6 +262,7 @@ function App() {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
         },
         body: JSON.stringify(updatedScript),
       });
@@ -254,6 +287,11 @@ function App() {
       try {
         const response = await fetch(`${API_BASE_URL}/tasks/${taskId}/rerun`, {
           method: 'POST',
+
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          },
         });
         if (!response.ok) {
           const errorMessage = await getErrorMessage(response);
